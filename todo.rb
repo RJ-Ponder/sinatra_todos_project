@@ -113,6 +113,10 @@ end
 get "/lists/:index" do
   @list_id = params[:index].to_i
   @list = session[:lists][@list_id]
+  unless @list
+    session[:error] = "The specified list was not found."
+    redirect "/lists"
+  end
   erb :list, layout: :layout
 end
 
