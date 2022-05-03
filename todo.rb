@@ -13,6 +13,20 @@ before do
   session[:lists] ||= []
 end
 
+# Data Structure:
+  # Lists
+    # session[:lists] ==>
+    # [
+    # { id: 1, name: Homework, todos: [{}, {}...] },
+    # { id: 2, name: Work, todos: [{}, {}...] }
+    # ]
+  # Todos:
+    # session[:lists][:name][:todos] ==>
+    # [
+    # { id: 1, name: English, completed: false },
+    # { id: 2, name: Science, completed: true }
+    # ]
+
 helpers do
   def list_complete?(list)
     todos_count(list) > 0 && todos_remaining_count(list) == 0
@@ -20,7 +34,6 @@ helpers do
   
   def list_class(list)
     "complete" if list_complete?(list)
-    # put in a conditional for the edge case of a new list without todos
   end
   
   def todos_remaining_count(list)
@@ -30,44 +43,25 @@ helpers do
   def todos_count(list)
     list[:todos].size
   end
-  # REVISIT THESE TWO METHODS AND REFACTOR
-  def sort_lists(lists, &block)
-    index_list = []
-    lists.each_with_index do |list, index|
-      index_list << { index => list }
-    end
-    
-    sorted_lists = index_list.sort_by { |index_list| list_complete?(index_list.values[0]) ? 1 : 0 }
-    
-    sorted_lists.each do |list|
-      yield list.values[0], list.keys[0]
+
+  def sort_lists(lists)
+    lists.partition { |list| !list_complete?(list) }.flatten.each do |list|
+      yield list
     end
   end
-  # REVISIT THESE TWO METHODS AND REFACTOR
-  def sort_todos(todos, &block)
-    index_todo = []
-    todos.each_with_index do |todo, index|
-      index_todo << { index => todo }
-    end
-    
-    sorted_todos = index_todo.sort_by { |index_todo| index_todo.values[0][:completed] ? 1 : 0 }
-    
-    sorted_todos.each do |todo|
-      yield todo.values[0], todo.keys[0]
+
+  def sort_todos(todos)
+    todos.partition { |todo| !todo[:completed] }.flatten.each do |todo|
+      yield todo
     end
   end
 end
-# session[:lists] ==>
-  # [
-  # { id: 1, name: Homework, todos: [{}, {}...] },
-  # { id: 2, name: Work, todos: [{}, {}...] }
-  # ]
-# session[:lists][:name][:todos] ==>
-  # [
-  # { id: 1, name: English, completed: false },
-  # { id: 2, name: Science, completed: true }
-  # ]
-  
+
+def next_id(todos_or_lists)
+  max_id = todos_or_lists.map { |todo_or_list| todo_or_list[:id] }.max || 0
+  max_id + 1
+end
+
 def load_list(list_id)
   list_index = session[:lists].index { |list| list[:id] == list_id }
   list = session[:lists][list_index] if list_id && list_index
@@ -107,11 +101,6 @@ def error_for_todo(name)
   if !(1..100).cover? name.size
     "Todo must be between 1 and 100 characters."
   end
-end
-
-def next_id(todos_or_lists)
-  max_id = todos_or_lists.map { |todo_or_list| todo_or_list[:id] }.max || 0
-  max_id + 1
 end
 
 # Create a new list
