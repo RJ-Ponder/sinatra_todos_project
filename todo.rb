@@ -18,6 +18,10 @@ before do
   @storage = DatabasePersistence.new(logger)
 end
 
+after do
+  @storage.disconnect
+end
+
 # Data Structure:
   # Lists
     # session[:lists] ==>
